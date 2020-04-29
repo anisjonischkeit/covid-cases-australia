@@ -1,0 +1,127 @@
+<html>
+  <head>
+    <script>
+      fetch(
+        "https://interactive.guim.co.uk/docsdata/1q5gdePANXci8enuiS4oHUJxcxC13d6bjMRSicakychE.json"
+      )
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          } else {
+            body.innerText =
+              "Something went wrong, please report an issue here: " +
+              res.status +
+              res.statusText;
+          }
+        })
+        .then(json => {
+          let data = json.sheets.updates.reduce((acc, item) => {
+            let state = item["State"];
+            if (!acc[state]) {
+              acc[state] = [];
+            }
+
+            if (item["Cumulative case count"] === "") {
+              return acc;
+            }
+
+            acc[state].push(item);
+
+            let l = acc[state].length;
+            if (l > 1) {
+              let today = acc[state][l - 1];
+              let yesterday = acc[state][l - 2];
+              today.difference =
+                today["Cumulative case count"] -
+                yesterday["Cumulative case count"];
+            }
+
+            return acc;
+          }, {});
+
+          let body = document.getElementById("body");
+
+          let renderPage = () => {
+            body.innerHTML = "";
+
+            Object.keys(data).forEach(state => {
+              let el = document.createElement("button");
+
+              el.innerText = state;
+              el.onclick = () => {
+                // new Date("dateString") is browser-dependent and discouraged, so we'll write
+                // a simple parse function for AU date format (which does no error checking)
+                function parseDate(str) {
+                  var dmy = str.split("/");
+                  return new Date(dmy[2], dmy[1] - 1, dmy[0]);
+                }
+
+                function datediff(first, second) {
+                  // Take the difference between the dates and divide by milliseconds per day.
+                  // Round to nearest whole number to deal with DST.
+                  return Math.round((second - first) / (1000 * 60 * 60 * 24));
+                }
+
+                body.innerHTML = "";
+
+                let today = data[state][data[state].length - 1];
+
+                data[state].sort((a, b) => datediff(a["Date"], b["Date"]));
+
+                console.log(data);
+                let day1With0NewCases = data[state].find(
+                  yesterday =>
+                    today["Cumulative case count"] -
+                      yesterday["Cumulative case count"] ==
+                    0
+                );
+
+                let daysSinceLast = datediff(
+                  parseDate(day1With0NewCases["Date"]),
+                  parseDate(today["Date"])
+                );
+
+                let p1 = document.createElement("p");
+                let p2 = document.createElement("p");
+                let p3 = document.createElement("p");
+
+                if (daysSinceLast > 0) {
+                  p1.innerText = "It has been";
+                  p2.innerText =
+                    daysSinceLast + (daysSinceLast == 1 ? " day" : " days");
+                  p3.innerText = "since " + state + "'s latest covid-19 case";
+                } else {
+                  let yesterday = data[state][data[state].length - 2];
+                  let casesSinceYesterday =
+                    today["Cumulative case count"] -
+                    yesterday["Cumulative case count"];
+
+                  p1.innerText = state + " has had";
+                  p2.innerText =
+                    casesSinceYesterday +
+                    (casesSinceYesterday == 1
+                      ? " new case of covid-19"
+                      : " new cases of covid-19");
+                  p3.innerText = "since " + yesterday["Date"];
+                }
+
+                let back = document.createElement("button");
+                back.innerText = "go back";
+                back.onclick = renderPage;
+
+                body.appendChild(back);
+                body.appendChild(p1);
+                body.appendChild(p2);
+                body.appendChild(p3);
+              };
+
+              body.append(el);
+            });
+          };
+
+          renderPage();
+        });
+    </script>
+  </head>
+  <body id="body"></body>
+</html>
