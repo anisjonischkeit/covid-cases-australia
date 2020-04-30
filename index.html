@@ -123,7 +123,10 @@
             let el = document.createElement("button");
 
             el.innerText = label;
-            el.onclick = onClick;
+            el.onclick = () => {
+              location.hash = label;
+              onClick();
+            };
 
             body.append(el);
           };
@@ -207,7 +210,16 @@
             daysSinceView(auData, "Australia", true);
           };
 
-          renderPage();
+          if (
+            Object.keys(data)
+              .map(state => "#" + state)
+              .includes(location.hash)
+          ) {
+            renderDaysSince(data, location.hash.slice(1));
+          } else {
+            location.hash = "Australia";
+            renderPage();
+          }
           console.log(data);
         });
     </script>
