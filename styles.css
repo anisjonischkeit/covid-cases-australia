@@ -26,3 +26,9 @@ p#days {
 p#note {
   font-size: 30;
 }
+
+button {
+  padding: 10px 15px;
+  margin: 0 15px;
+  font-size: 20px;
+}
