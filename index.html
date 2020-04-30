@@ -62,37 +62,53 @@
               let p1 = document.createElement("p");
               let p2 = document.createElement("p");
               let p3 = document.createElement("p");
+              let p4 = document.createElement("p");
 
+              let dateTimeStr = covidEvent =>
+                covidEvent["Date"] +
+                (covidEvent["Time"] && " " + covidEvent["Time"]);
+
+              let daysSinceLast = 0;
               if (day1With0NewCases) {
-                let daysSinceLast = datediff(
+                daysSinceLast = datediff(
                   parseDate(day1With0NewCases["Date"]),
                   parseDate(today["Date"])
                 );
 
-                p1.innerText = "It has been";
-                p2.innerText =
-                  daysSinceLast + (daysSinceLast == 1 ? " day" : " days");
-                p3.innerText = "since " + region + "'s latest covid-19 case";
+                p4.innerText =
+                  "No new cases between " +
+                  dateTimeStr(day1With0NewCases) +
+                  " and " +
+                  dateTimeStr(today) +
+                  ".";
               } else {
                 let yesterday = covidEvents[covidEvents.length - 2];
                 let casesSinceYesterday =
                   today["Cumulative case count"] -
                   yesterday["Cumulative case count"];
 
-                p1.innerText = region + " has had";
-                p2.innerText =
+                p4.innerText =
                   (aggregate ? "≤ " : "") +
                   casesSinceYesterday +
                   (casesSinceYesterday == 1
-                    ? " new case of covid-19"
-                    : " new cases of covid-19");
-                p3.innerText =
-                  "between " + yesterday["Date"] + " and " + today["Date"];
+                    ? " new case between "
+                    : " new cases between ") +
+                  dateTimeStr(covidEvents[covidEvents.length - 2]) +
+                  " and " +
+                  dateTimeStr(today) +
+                  ".";
               }
+
+              p1.innerText = "It has been";
+              p2.innerText =
+                daysSinceLast + (daysSinceLast == 1 ? " day" : " days");
+              p3.innerText = "since " + region + "'s latest covid-19 case";
 
               body.appendChild(p1);
               body.appendChild(p2);
               body.appendChild(p3);
+
+              body.appendChild(p4);
             }
           };
 
@@ -125,8 +141,8 @@
             let auDates = Object.keys(data).reduce((acc, state) => {
               data[state].sort((a, b) => datediff(a["Date"], b["Date"]));
 
-              let yesterday = data[state][data[state].length - 2]["Date"];
-              let today = data[state][data[state].length - 1]["Date"];
+              let yesterday = data[state][data[state].length - 2];
+              let today = data[state][data[state].length - 1];
 
               if (getDay1With0NewCases(data[state])) {
                 return acc;
@@ -136,10 +152,10 @@
                 acc[0] = yesterday;
                 acc[1] = today;
               } else {
-                if (parseDate(yesterday) < parseDate(acc[0])) {
+                if (parseDate(yesterday["Date"]) < parseDate(acc[0]["Date"])) {
                   acc[0] = yesterday;
                 }
-                if (parseDate(today) < parseDate(acc[1])) {
+                if (parseDate(today["Date"]) < parseDate(acc[1]["Date"])) {
                   acc[1] = today;
                 }
               }
@@ -155,9 +171,13 @@
 
               let fstDate = data[state].reduce((acc, item, idx) => {
                 if (!acc) {
-                  if (parseDate(item["Date"]) == parseDate(auDates[0])) {
+                  if (
+                    parseDate(item["Date"]) == parseDate(auDates[0]["Date"])
+                  ) {
                     return item;
-                  } else if (parseDate(item["Date"]) > parseDate(auDates[0])) {
+                  } else if (
+                    parseDate(item["Date"]) > parseDate(auDates[0]["Date"])
+                  ) {
                     return data[state][idx - 1];
                   }
                 }
@@ -179,8 +199,10 @@
             });
             navView(data);
 
-            auData[0]["Date"] = auDates[0];
-            auData[1]["Date"] = auDates[1];
+            auData[0]["Date"] = auDates[0]["Date"];
+            auData[1]["Date"] = auDates[1]["Date"];
+            auData[0]["Time"] = auDates[0]["Time"];
+            auData[1]["Time"] = auDates[1]["Time"];
 
             daysSinceView(auData, "Australia", true);
           };
