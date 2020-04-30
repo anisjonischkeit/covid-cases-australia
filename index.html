@@ -1,5 +1,8 @@
 <html>
   <head>
+    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+
     <script>
       let parseDate = str => {
         var dmy = str.split("/");
@@ -59,10 +62,14 @@
               let today = covidEvents[covidEvents.length - 1];
               let day1With0NewCases = getDay1With0NewCases(covidEvents);
 
+              let textBody = document.createElement("div");
+              textBody.id = "text";
               let p1 = document.createElement("p");
-              let p2 = document.createElement("p");
+              let days = document.createElement("p");
+              days.id = "days"
               let p3 = document.createElement("p");
-              let p4 = document.createElement("p");
+              let note = document.createElement("p");
+              note.id = "note"
 
               let dateTimeStr = covidEvent =>
                 covidEvent["Date"] +
@@ -70,24 +77,29 @@
 
               let daysSinceLast = 0;
               if (day1With0NewCases) {
+                document.body.style.backgroundColor = "#1dc075"
+
                 daysSinceLast = datediff(
                   parseDate(day1With0NewCases["Date"]),
                   parseDate(today["Date"])
                 );
 
-                p4.innerText =
+                note.innerText =
                   "No new cases between " +
                   dateTimeStr(day1With0NewCases) +
                   " and " +
                   dateTimeStr(today) +
                   ".";
               } else {
+                document.body.style.backgroundColor = "#c01d2f"
+
+                      
                 let yesterday = covidEvents[covidEvents.length - 2];
                 let casesSinceYesterday =
                   today["Cumulative case count"] -
                   yesterday["Cumulative case count"];
 
-                p4.innerText =
+                note.innerText =
                   (aggregate ? "≤ " : "") +
                   casesSinceYesterday +
                   (casesSinceYesterday == 1
@@ -100,15 +112,18 @@
               }
 
               p1.innerText = "It has been";
-              p2.innerText =
+              days.innerText =
                 daysSinceLast + (daysSinceLast == 1 ? " day" : " days");
               p3.innerText = "since " + region + "'s latest covid-19 case";
 
-              body.appendChild(p1);
-              body.appendChild(p2);
-              body.appendChild(p3);
+              textBody.appendChild(p1);
+              textBody.appendChild(days);
+              textBody.appendChild(p3);
 
-              body.appendChild(p4);
+
+              body.appendChild(textBody)
+              body.appendChild(note);
+
             }
           };
 
@@ -128,14 +143,19 @@
               onClick();
             };
 
-            body.append(el);
+            return el
           };
 
           let navView = data => {
-            button("Australia", renderPage);
+            let div = document.createElement("div");
+            div.id = "nav"
+
+            div.appendChild(button("Australia", renderPage));
             Object.keys(data).forEach(state => {
-              button(state, () => renderDaysSince(data, state));
+              div.appendChild(button(state, () => renderDaysSince(data, state)));
             });
+
+            body.appendChild(div)
           };
 
           let renderPage = () => {
