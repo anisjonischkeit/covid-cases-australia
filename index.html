@@ -276,7 +276,7 @@
                 if (parseDate(yesterday["Date"]) < parseDate(acc[0]["Date"])) {
                   acc[0] = yesterday;
                 }
-                if (parseDate(today["Date"]) < parseDate(acc[1]["Date"])) {
+                if (parseDate(today["Date"]) > parseDate(acc[1]["Date"])) {
                   acc[1] = today;
                 }
               }
