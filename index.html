@@ -1,7 +1,10 @@
 <html>
   <head>
-    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
 
     <script>
       let parseDate = str => {
@@ -42,7 +45,46 @@
             return acc;
           }, {});
 
+          Object.keys(data).reduce((acc, state) => {
+            let regionData = data[state];
+            regionData.sort((a, b) => datediff(a["Date"], b["Date"]));
+          });
+
           let body = document.getElementById("body");
+
+          // MARK: Helpers
+
+          let dayByDay = regionData =>
+            regionData.reduce((acc, item, idx) => {
+              if (acc.length === 0) {
+                return [
+                  {
+                    active: parseInt(item["Cumulative case count"]) > 0,
+                    numberOfDays: 0
+                  }
+                ];
+              }
+
+              let lastItem = regionData[idx - 1];
+              let lastStatus = acc[acc.length - 1];
+
+              let active =
+                item["Cumulative case count"] -
+                  lastItem["Cumulative case count"] >
+                0;
+
+              console.log(active);
+              lastStatus.numberOfDays +=
+                (parseDate(item["Date"]) - parseDate(lastItem["Date"])) /
+                (1000 * 3600 * 24);
+              if (lastStatus.active !== active) {
+                acc.push({
+                  active,
+                  numberOfDays: 1
+                });
+              }
+              return acc;
+            }, []);
 
           let getDay1With0NewCases = covidEvents => {
             let today = covidEvents[covidEvents.length - 1];
@@ -53,6 +95,8 @@
                   0 && today["Date"] !== yesterday["Date"]
             );
           };
+
+          // MARK: Views
 
           let daysSinceView = (covidEvents, region, aggregate) => {
             {
@@ -66,10 +110,10 @@
               textBody.id = "text";
               let p1 = document.createElement("p");
               let days = document.createElement("p");
-              days.id = "days"
+              days.id = "days";
               let p3 = document.createElement("p");
               let note = document.createElement("p");
-              note.id = "note"
+              note.id = "note";
 
               let dateTimeStr = covidEvent =>
                 covidEvent["Date"] +
@@ -77,7 +121,7 @@
 
               let daysSinceLast = 0;
               if (day1With0NewCases) {
-                document.body.style.backgroundColor = "#1dc075"
+                document.body.style.backgroundColor = "#1dc075";
 
                 daysSinceLast = datediff(
                   parseDate(day1With0NewCases["Date"]),
@@ -91,9 +135,8 @@
                   dateTimeStr(today) +
                   ".";
               } else {
-                document.body.style.backgroundColor = "#c01d2f"
+                document.body.style.backgroundColor = "#c01d2f";
 
-                      
                 let yesterday = covidEvents[covidEvents.length - 2];
                 let casesSinceYesterday =
                   today["Cumulative case count"] -
@@ -120,50 +163,105 @@
               textBody.appendChild(days);
               textBody.appendChild(p3);
 
-
-              body.appendChild(textBody)
+              body.appendChild(textBody);
               body.appendChild(note);
-
             }
           };
+
+          let dayByDayView = covidEvents => {
+            let data = dayByDay(covidEvents);
+
+            let lastDate = parseDate(
+              covidEvents[covidEvents.length - 1]["Date"]
+            );
+            console.log(lastDate);
+            lastDate.setDate(lastDate.getDate() - 1);
+
+            let content = document.createElement("div");
+            content.id = "day_by_day_view";
+            let day = document.createElement("div");
+            day.id = "day_hover_display";
+            day.innerHTML = "&nbsp;";
+            let items = document.createElement("div");
+            items.id = "day_by_day_view_items";
+
+            data.reduceRight((acc, item) => {
+              for (let i = 0; i < item.numberOfDays; i++) {
+                if (acc > 4 * 7) {
+                  return acc;
+                }
+
+                let el = document.createElement("div");
+                el.innerHTML = "&nbsp;";
+                el.className = item.active ? "active_day" : "inactive_day";
+
+                let date = new Date(lastDate.getTime());
+                date.setDate(date.getDate() - acc);
+                el.onmouseenter = () => {
+                  day.innerText = date.toLocaleDateString("en-AU");
+                };
+                content.onmouseleave = () => {
+                  day.innerHTML = "&nbsp;";
+                };
+
+                items.prepend(el);
+
+                acc += 1;
+              }
+              return acc;
+            }, 0);
+
+            content.appendChild(day);
+            content.appendChild(items);
+            body.appendChild(content);
+          };
+
+          let pageView = (covidEvents, region, aggregate) => {
+            if (!aggregate) {
+              dayByDayView(covidEvents);
+            }
+            daysSinceView(covidEvents, region, aggregate);
+          };
+
+          let navView = data => {
+            let button = (label, onClick) => {
+              let el = document.createElement("button");
+
+              el.innerText = label;
+              el.onclick = () => {
+                location.hash = label;
+                onClick();
+              };
+
+              return el;
+            };
+
+            let div = document.createElement("div");
+            div.id = "nav";
+
+            div.appendChild(button("Australia", renderDaysSinceAustralia));
+            Object.keys(data).forEach(state => {
+              div.appendChild(
+                button(state, () => renderDaysSince(data, state))
+              );
+            });
+
+            body.appendChild(div);
+          };
+
+          // MARK: Pages
 
           let renderDaysSince = (data, state) => {
             body.innerHTML = "";
 
             navView(data);
-            daysSinceView(data[state], state);
+            pageView(data[state], state);
           };
 
-          let button = (label, onClick) => {
-            let el = document.createElement("button");
-
-            el.innerText = label;
-            el.onclick = () => {
-              location.hash = label;
-              onClick();
-            };
-
-            return el
-          };
-
-          let navView = data => {
-            let div = document.createElement("div");
-            div.id = "nav"
-
-            div.appendChild(button("Australia", renderPage));
-            Object.keys(data).forEach(state => {
-              div.appendChild(button(state, () => renderDaysSince(data, state)));
-            });
-
-            body.appendChild(div)
-          };
-
-          let renderPage = () => {
+          let renderDaysSinceAustralia = () => {
             body.innerHTML = "";
 
             let auDates = Object.keys(data).reduce((acc, state) => {
-              data[state].sort((a, b) => datediff(a["Date"], b["Date"]));
-
               let yesterday = data[state][data[state].length - 2];
               let today = data[state][data[state].length - 1];
 
@@ -227,8 +325,10 @@
             auData[0]["Time"] = auDates[0]["Time"];
             auData[1]["Time"] = auDates[1]["Time"];
 
-            daysSinceView(auData, "Australia", true);
+            pageView(auData, "Australia", true);
           };
+
+          // MARK: Region Router
 
           if (
             Object.keys(data)
@@ -238,7 +338,7 @@
             renderDaysSince(data, location.hash.slice(1));
           } else {
             location.hash = "Australia";
-            renderPage();
+            renderDaysSinceAustralia();
           }
           console.log(data);
         });

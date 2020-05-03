@@ -32,3 +32,26 @@ button {
   margin: 0 15px;
   font-size: 20px;
 }
+
+#day_by_day_view {
+  margin: 40px auto 0;
+  width: min-content;
+  text-align: right;
+}
+
+#day_by_day_view_items {
+  display: flex;
+  border: 2px solid;
+}
+#day_by_day_view_items > div {
+  border: 1px dashed;
+  width: 10px;
+  line-height: 10px;
+}
+.active_day {
+  background-color: #c01d2f;
+}
+
+.inactive_day {
+  background-color: #1dc075;
+}
